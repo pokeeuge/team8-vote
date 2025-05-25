@@ -238,10 +238,11 @@ st.markdown("""
 - 🌞 **防曬用品**｜Sun Protection：帽子、涼感噴霧必備 Hat & cooling spray essential
 - 🦟 **防蚊提醒**｜Mosquito Protection：請攜帶防蚊液 Bring mosquito spray
 - 🩹 **小傷處理**｜Injury Care：攜帶 OK 繃，留意階梯與石階 Bring band-aids; watch your step
-- 💧 **補水需求**｜Hydration：每人至少 1 公升水 At least 1L of water per person
+- 💧 **補水需求**｜Hydration：每人至少 600c.c. 水 At least 600ml of water per person
+- 🚌 **交通方式｜Transportation**：可選擇包車、步行或搭乘公車到 You can choose to book a van, walk, or take a bus
 
 #### 🎒 建議攜帶物品｜Recommended Items
-- 水｜Water (1L+)
+- 水｜Water (600ml+)
 - 帽子｜Hat
 - 涼感噴霧｜Cooling spray
 - 防蚊液｜Mosquito spray
