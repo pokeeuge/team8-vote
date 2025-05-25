@@ -47,13 +47,13 @@ st.title("🏃‍♀️ Team 8 Lunch Meetup")
 name = st.text_input("📝 Enter your name｜請輸入你的名字：").strip()
 
 # 讀取 Google Sheets 最新資料
-data = SHEET.get_all_records()
+votedata = SHEET.get_all_records()
 # st.write("Google Sheets 內容：", data)
 
 
 # 轉成 DataFrame
-if data:  # 有資料（標頭 + 至少一筆資料）
-    df = pd.DataFrame(data)
+if votedata:  # 有資料（標頭 + 至少一筆資料）
+    df = pd.DataFrame(votedata)
     # 標準化欄位名稱
     df.columns = [col.strip().lower() for col in df.columns]
     # 標準化每一行資料的值：去空白、轉小寫
@@ -173,8 +173,8 @@ summary_table = """
   Estimated gap: ~958,149 steps, ~79,845 per person
 
 - **跟哪一隊比？ / Compared to which team?**  
-  第三名平均 **175,348**  
-  The 3rd team's average is **175,348**
+  第一名平均 **175,348**  
+  The 1st team's average is **175,348**
 
 - **是否所有人要補這些？ / Everyone needs to cover?**  
   是，如果沒有人參加象山，全隊需要分擔的步數就多  
@@ -253,32 +253,51 @@ st.markdown("""
 """)
 
 
-# --- 🗳️ Route Voting ---
+# === 🗳️ Route Voting ===
 st.header("🗳️ Route Voting｜路線票選")
-route_options  = ['trailhead route 登山口路線', 'songde route 松德路線', 'lingyin trail 靈隱寺象山步道']
-route_vote = st.radio("Pick your preferred route｜選擇你喜歡的路線：",route_options)
+# 將路線選項也標準化為小寫
+route_options_raw = ['trailhead route 登山口路線', 'songde route 松德路線', 'lingyin trail 靈隱寺象山步道']
+route_options = [opt.lower() for opt in route_options_raw]
+
+# 顯示投票選項（保持原樣顯示，底層用標準化小寫比對）
+route_vote_display = st.radio("Pick your preferred route｜選擇你喜歡的路線：", route_options_raw)
 
 if st.button("✅ Submit Route Vote｜提交路線投票"):
     if not name.strip():
         st.warning("❗ 請先輸入你的名字再進行投票！")
     else:
-        # 假設你有 SHEET.append_row(...) 的邏輯
-        SHEET.append_row([name, "Route", route_vote])
-        st.success(f"Your team name vote「{route_vote}」 has been saved！")
+        # 存入 Google Sheets 時，vote 以小寫存儲，方便統計
+        SHEET.append_row([name, "Route", route_vote_display.lower()])
+        st.success(f"Your route vote「{route_vote_display}」 has been saved！")
+        import time
+        time.sleep(2)  # 等待 Google Sheets 更新
         st.rerun()
 
-
-
-# 顯示票數排名
+# === 顯示票數排名 ===
 st.subheader("🏅 路線票數排名")
+# st.write("DEBUG - Google Sheets 回傳的資料:", votedata)
+if votedata:
+    df = pd.DataFrame(votedata)
+    # st.write("DEBUG - 轉成 DataFrame", df)
+    df.columns = [col.strip().lower() for col in df.columns]
+    # st.write("DEBUG - 欄位名稱", df.columns.tolist())
+    df = df.applymap(lambda x: x.strip().lower() if isinstance(x, str) else x)
+else:
+    df = pd.DataFrame(columns=['name', 'type', 'vote'])
+    
 if not df.empty and 'type' in df.columns:
     route_df = df[df['type'] == 'route']
-    st.write("✅ route_df:", route_df)
     if not route_df.empty:
-        route_df['vote'] = route_df['vote'].str.strip().str.lower()
+        # 統計票數時，確保對齊小寫版本
         route_counts = route_df['vote'].value_counts().reindex(route_options, fill_value=0)
         st.bar_chart(route_counts)
-        st.dataframe(route_counts.reset_index().rename(columns={'index': '路線', 'vote': '票數'}))
+
+        # # 顯示表格 (顯示原始格式)
+        # display_counts = pd.DataFrame({
+        #     '路線': route_options_raw,
+        #     '票數': [route_counts.get(opt, 0) for opt in route_options]
+        # })
+        # st.dataframe(display_counts)
     else:
         st.info("目前沒有任何『Route』類型投票資料。")
 else:
@@ -309,24 +328,35 @@ st.markdown("""
 """)
 
 # --- Voting System with Voter Name ---
-team_options = ['Shohei Blowtani', '八八八 I"'"m lovin"'" it', 'Blowtani 八八八八八']
-team_vote = st.radio("Pick your favorite team name｜選出你最喜歡的隊名：",team_options)
+team_options_raw = ['Shohei Blowtani', '八八八 I\'m lovin\' it', 'Blowtani 八八八八八']
+team_options = [opt.lower() for opt in team_options_raw]
+
+team_vote_display = st.radio("Pick your favorite team name｜選出你最喜歡的隊名：", team_options_raw)
+
 if st.button("✅ Submit Team Name Vote｜提交隊名投票"):
-        if not name.strip():
-            st.warning("❗ 請先輸入你的名字再進行投票！")
-        else:
-            SHEET.append_row([name, "TeamName", team_vote])
-            st.success(f"Your team name vote「{team_vote}」has been saved!")
-            st.rerun()
+    if not name.strip():
+        st.warning("❗ 請先輸入你的名字再進行投票！")
+    else:
+        SHEET.append_row([name, "TeamName", team_vote_display.lower()])
+        st.success(f"Your team name vote「{team_vote_display}」has been saved!")
+        import time
+        time.sleep(2)  # 等待 Google Sheets 更新
+        st.rerun()
 
 st.subheader("🗳️ 隊名投票結果統計")
 if not df.empty and 'type' in df.columns:
-    route_df = df[df['type'] == 'teamname']
-    st.write("✅ route_df:", route_df)
-    if not route_df.empty:
-        route_counts = route_df['vote'].value_counts().reindex(route_options, fill_value=0)
-        st.bar_chart(route_counts)
-        st.dataframe(route_counts.reset_index().rename(columns={'index': '隊名', 'vote': '票數'}))
+    team_df = df[df['type'] == 'teamname']
+    # st.write("✅ team_df:", team_df)
+    if not team_df.empty:
+        team_counts = team_df['vote'].value_counts().reindex(team_options, fill_value=0)
+        st.bar_chart(team_counts)
+
+        # # 顯示表格 (原始隊名格式)
+        # display_counts = pd.DataFrame({
+        #     '隊名': team_options_raw,
+        #     '票數': [team_counts.get(opt, 0) for opt in team_options]
+        # })
+        # st.dataframe(display_counts)
     else:
         st.info("目前沒有任何『TeamName』類型投票資料。")
 else:
