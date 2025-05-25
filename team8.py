@@ -5,11 +5,34 @@ import streamlit.components.v1 as components
 import gspread
 from google.oauth2.service_account import Credentials
 
-# === Google Sheets 設定 ===
-SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-CREDS = Credentials.from_service_account_file("lexical-lock-431605-u5-e36d9da17514.json", scopes=SCOPE)
-gc = gspread.authorize(CREDS)
-SHEET = gc.open("Team8_Votes").worksheet("Sheet1")  # 確保有建立這個 Sheet，且有分享給服務帳號
+# ===========================
+# 🔐 Google Sheets 認證
+# ===========================
+
+# 從 .streamlit/secrets.toml 讀取憑證
+try:
+    service_account_info = st.secrets["gcp"]
+except Exception as e:
+    st.error(f"無法讀取 secrets：{e}")
+    st.stop()
+
+SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+]
+
+# 建立憑證
+credentials = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+
+# gspread 授權
+gc = gspread.authorize(credentials)
+
+# 開啟 Google Sheets
+try:
+    SHEET = gc.open("Team8_Votes").worksheet("Sheet1")  # 確保建立好 Sheet 並分享給服務帳號
+except Exception as e:
+    st.error(f"無法開啟 Google Sheet：{e}")
+    st.stop()
 
 # === 限定名單 (Whitelist) ===
 allowed_voters = [
@@ -25,7 +48,7 @@ name = st.text_input("📝 Enter your name｜請輸入你的名字：").strip()
 
 # 讀取 Google Sheets 最新資料
 data = SHEET.get_all_records()
-st.write("Google Sheets 內容：", data)
+# st.write("Google Sheets 內容：", data)
 
 
 # 轉成 DataFrame
@@ -39,10 +62,10 @@ else:  # 只有標頭（沒資料）
     df = pd.DataFrame(columns=['name', 'type', 'vote'])
 
 # 顯示欄位結構
-st.write("資料欄位:", df.columns.tolist())
+# st.write("資料欄位:", df.columns.tolist())
 route_df = df[df['type'] == 'route']
-st.write("✅ route_df:", route_df)
-st.write("資料內容:", df)
+# st.write("✅ route_df:", route_df)
+# st.write("資料內容:", df)
 
 if name:
     if name not in allowed_voters:
